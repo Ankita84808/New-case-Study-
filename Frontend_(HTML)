@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Compensation Tool</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Employee Compensation Dashboard</h1>
+
+    <!-- Filter Form -->
+    <div>
+        <label>Role: <input id="roleFilter" type="text" placeholder="Analyst"></label>
+        <label>Location: <input id="locationFilter" type="text" placeholder="Bangalore"></label>
+        <label><input id="showInactive" type="checkbox"> Show Inactive</label>
+        <button onclick="loadEmployees()">Filter</button>
+    </div>
+
+    <!-- Results Table -->
+    <table id="results" border="1">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Location</th>
+                <th>Compensation</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <!-- Export Button -->
+    <button onclick="exportCSV()">Export to CSV</button>
+
+    <!-- Compensation Simulation -->
+    <div style="margin-top: 20px;">
+        <h3>Compensation Simulation</h3>
+        <label>Global Increment (%): <input id="globalPct" type="number" value="5"></label>
+        <label>Role-Specific (e.g., Analyst): <input id="roleSpecific" type="text"></label>
+        <label>Increment (%): <input id="rolePct" type="number" value="10"></label>
+        <button onclick="runSimulation()">Simulate</button>
+        <div id="simulationResults"></div>
+    </div>
+
+    <script>
+        async function loadEmployees() {
+            const role = document.getElementById('roleFilter').value || '';
+            const location = document.getElementById('locationFilter').value || '';
+            const includeInactive = document.getElementById('showInactive').checked;
+
+            const response = await fetch(`/api/employees?role=${encodeURIComponent(role)}&location=${encodeURIComponent(location)}&include_inactive=${includeInactive}`);
+            const data = await response.json();
+
+            const tbody = document.querySelector('#results tbody');
+            tbody.innerHTML = data.map(emp => `
+                <tr>
+                    <td>${emp.name}</td>
+                    <td>${emp.role}</td>
+                    <td>${emp.location}</td>
+                    <td>${emp.current_compensation}</td>
+                    <td>${emp.is_active ? 'Active' : 'Inactive'}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function exportCSV() {
+            window.location.href = '/api/export';
+        }
+
+        async function runSimulation() {
+            const globalPct = document.getElementById('globalPct').value;
+            const role = document.getElementById('roleSpecific').value;
+            const rolePct = document.getElementById('rolePct').value;
+
+            const response = await fetch(`/api/simulate?global_pct=${globalPct}&role_filter=${encodeURIComponent(role)}&role_pct=${rolePct}`);
+            const data = await response.json();
+
+            document.getElementById('simulationResults').innerHTML = `
+                <h4>Simulation Results</h4>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+        }
+    </script>
+</body>
+</html>
